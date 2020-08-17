@@ -81,7 +81,7 @@ for x in range(0,n_of_seg):
   ods = drv.Create(outfile, C.shape[1], C.shape[0], bands=1, eType=gdal.GDT_Int16, options=['COMPRESS=LZW','BIGTIFF=YES'])
   ods.GetRasterBand(1).WriteArray(C)
   ods.GetRasterBand(1).SetNoDataValue(nd)
-  if args.keepstats==False:
+  if args.keepstats==False or n_of_seg==1:
     ods.GetRasterBand(1).ComputeStatistics(True)
   else:
     ods.GetRasterBand(1).SetStatistics(min,max,mean,stddev)
