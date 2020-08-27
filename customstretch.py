@@ -9,9 +9,10 @@ parser.add_argument('infile',  type=str, help='Input file')
 parser.add_argument('outfile', type=str, help='Output file')
 parser.add_argument('--scale', type=int, nargs=4, default=[3000, 28000, 1, 255], help='like scale for gdal_translate')
 parser.add_argument('--nodata', type=int, default=0, help='new nodata')
+parser.add_argument('--exp', type=float, default=1, help='exponent for power-law stretch')
 args = parser.parse_args()
 
-curmin, curmax, newmin, newmax = args.scale
+SrcMin, SrcMax, DstMin, DstMax = args.scale
 
 ds = gdal.Open(args.infile, gdal.GA_ReadOnly)
 xoffset, px_w, rot1, yoffset, rot2, px_h = ds.GetGeoTransform()
@@ -20,9 +21,9 @@ bd = ds.GetRasterBand(1)
 nd = bd.GetNoDataValue()
 
 A = bd.ReadAsArray().astype(np.int32)
-B = (A-curmin)*(newmax-newmin)/(curmax-curmin)+newmin
-B[A<curmin] = newmin
-B[A>curmax] = newmax
+B = (A-SrcMin)*(DstMax-DstMin)/(SrcMax-SrcMin)+DstMin
+B[A<SrcMin] = DstMin
+B[A>SrcMax] = DstMax
 B[A==nd] = args.nodata
 
 drv = gdal.GetDriverByName('GTiff')
