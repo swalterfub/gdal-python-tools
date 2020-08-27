@@ -21,7 +21,7 @@ bd = ds.GetRasterBand(1)
 nd = bd.GetNoDataValue()
 
 A = bd.ReadAsArray().astype(np.int32)
-B = (A-SrcMin)*(DstMax-DstMin)/(SrcMax-SrcMin)+DstMin
+B = (DstMax-DstMin) * np.power( (A-SrcMin) / (SrcMax-SrcMin), args.exp) + DstMin
 B[A<SrcMin] = DstMin
 B[A>SrcMax] = DstMax
 B[A==nd] = args.nodata
@@ -32,7 +32,6 @@ ods = drv.Create(outfile, B.shape[1], B.shape[0], bands=1, eType=gdal.GDT_Byte, 
 ods.GetRasterBand(1).WriteArray(B)
 ods.GetRasterBand(1).SetNoDataValue(args.nodata)
 ods.GetRasterBand(1).ComputeStatistics(True)
-#ods.SetGeoTransform((xoffset, px_w, rot1, yoffset, rot2, px_h))
 ods.SetGeoTransform(ds.GetGeoTransform())
 ods.SetProjection(ds.GetProjection())
 
