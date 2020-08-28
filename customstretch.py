@@ -19,6 +19,8 @@ xoffset, px_w, rot1, yoffset, rot2, px_h = ds.GetGeoTransform()
 
 bd = ds.GetRasterBand(1)
 nd = bd.GetNoDataValue()
+if nd is None:
+  nd=-32768
 
 A = bd.ReadAsArray().astype(np.int32)
 B = (DstMax-DstMin) * np.power( (A-SrcMin) / (SrcMax-SrcMin), args.exp) + DstMin
