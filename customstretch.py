@@ -7,9 +7,9 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('infile',  type=str, help='Input file')
 parser.add_argument('outfile', type=str, help='Output file')
-parser.add_argument('--scale', type=int, nargs=4, default=[3000, 28000, 1, 255], help='like scale for gdal_translate')
+parser.add_argument('--scale', type=int, nargs=4, default=[0, 32767, 1, 255], help='like scale for gdal_translate')
 parser.add_argument('--nodata', type=int, default=0, help='new nodata')
-parser.add_argument('--exp', type=float, default=1, help='exponent for power-law stretch')
+parser.add_argument('--exp', type=str, default="1.00", help='exponent for power-law stretch, or log for logarithmic stretch')
 args = parser.parse_args()
 
 SrcMin, SrcMax, DstMin, DstMax = args.scale
@@ -19,11 +19,15 @@ xoffset, px_w, rot1, yoffset, rot2, px_h = ds.GetGeoTransform()
 
 bd = ds.GetRasterBand(1)
 nd = bd.GetNoDataValue()
-if nd is None:
-  nd=-32768
 
-A = bd.ReadAsArray().astype(np.int32)
-B = (DstMax-DstMin) * np.power( (A-SrcMin) / (SrcMax-SrcMin), args.exp) + DstMin
+A = bd.ReadAsArray().astype(np.float32)
+A[A==-32768]=np.nan
+A=A/18*25
+print("min,max,mean,std", np.nanmin(A), np.nanmax(A), np.nanmean(A), np.nanstd(A))
+if args.exp=='log':
+  B = np.log2( 1 + (A-SrcMin) / (SrcMax-SrcMin)) * (DstMax-DstMin) + DstMin
+else:
+  B = (DstMax-DstMin) * np.power( (A-SrcMin) / (SrcMax-SrcMin), float(args.exp)) + DstMin
 B[A<SrcMin] = DstMin
 B[A>SrcMax] = DstMax
 B[A==nd] = args.nodata
