@@ -23,9 +23,6 @@ rgb=None
 log.debug('convert to bgr')
 bgr = np.dstack([blue,green,red])
 log.debug(bgr.shape)
-red=None
-green=None
-blue=None
 log.debug('call cv.COLOR_BGR2HSV')
 hsv = cv.cvtColor(bgr, cv.COLOR_BGR2HSV)
 log.debug(hsv.shape)
@@ -34,33 +31,40 @@ bgr=None
 pds = gdal.Open(args.pan)
 log.debug('read pan')
 pan = pds.ReadAsArray()
+pan[(red==0) | (green==0) | (blue==0)]=0
 log.debug('substitute v')
 hsv[:,:,2] = pan
-pan=None
+red=None
+green=None
+blue=None
 
 log.debug('call cv.COLOR_HSV2RGB')
 sharp = cv.cvtColor(hsv, cv.COLOR_HSV2RGB)
 hsv=None
+sharp[sharp==0]=1
+sharp[:,:,0][pan==0]=0
+sharp[:,:,1][pan==0]=0
+sharp[:,:,2][pan==0]=0
+pan=None
 log.debug(sharp.shape)
 
 log.debug('save result')
 drv = gdal.GetDriverByName('GTiff')
 outfile=args.out
 ods = drv.Create(outfile, sharp.shape[1], sharp.shape[0], bands=3, eType=gdal.GDT_Byte, options=['COMPRESS=LZW','BIGTIFF=YES'])
-#ods.GetRasterBand(1).WriteArray(hsv[:,:,0])
-#ods.GetRasterBand(2).WriteArray(hsv[:,:,1])
-#ods.GetRasterBand(3).WriteArray(hsv[:,:,2])
 log.debug('1')
 ods.GetRasterBand(1).WriteArray(sharp[:,:,0])
+ods.GetRasterBand(1).SetNoDataValue(0)
 log.debug('2')
 ods.GetRasterBand(2).WriteArray(sharp[:,:,1])
+ods.GetRasterBand(2).SetNoDataValue(0)
 log.debug('3')
 ods.GetRasterBand(3).WriteArray(sharp[:,:,2])
-#ods.GetRasterBand(1).WriteArray(sharp[0:,:])
-#ods.GetRasterBand(2).WriteArray(sharp[1:,:])
-#ods.GetRasterBand(3).WriteArray(sharp[2:,:])
+ods.GetRasterBand(3).SetNoDataValue(0)
 #ods.GetRasterBand(1).ComputeStatistics(True)
-#ods.GetRasterBand(1).SetStatistics(min,max,mean,stddev)
+ods.GetRasterBand(1).SetStatistics(1,255,128,20)
+ods.GetRasterBand(2).SetStatistics(1,255,128,20)
+ods.GetRasterBand(3).SetStatistics(1,255,128,20)
 ods.SetGeoTransform(ds.GetGeoTransform())
 ods.SetProjection(ds.GetProjection())
 
